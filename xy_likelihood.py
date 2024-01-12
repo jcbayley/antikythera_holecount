@@ -36,9 +36,9 @@ def log_likelihood(params, data, N):
         #yi = R*np.sin(2*np.pi*ks/N + phase) + ycent
         y_likelihood = -(yi - y)**2/(2*sigma_y**2)
 
-        normlogfact = -len(x)/2. * np.log(2*np.pi*sigma_x*sigma_y)
+        normlogfact = -len(x) * np.log(2*np.pi*sigma_x*sigma_y)
 
-        total_likelihood += 2*normlogfact + np.sum(x_likelihood + y_likelihood)
+        total_likelihood += normlogfact + np.sum(x_likelihood + y_likelihood)
 
     return total_likelihood
 
@@ -48,7 +48,7 @@ def prior_bounds(nsegments):
     "R": (60, 100),
     "sigma_x": (0,1),
     "sigma_y": (0,1),
-}
+    }
     for k in range(nsegments):
         bounds[f"phases{k}"] = (0,2*np.pi)
     for k in range(nsegments):
@@ -90,8 +90,6 @@ def run_nested(root_dir, data_path):
     ndims = 3 + 3*nsegments
     Nrange = np.arange(352, 367)#np.array([353, 354, 355, 359, 360, 361])
 
-    
-    print(ndims)
     for n in Nrange:
         andyll = lambda params: log_likelihood(params, data, n)
         andypt = lambda params: prior_transform(params, bounds, plabels)
@@ -108,7 +106,6 @@ if __name__ == "__main__":
     
     root_dir = "./xy_likelihood2"
     data_path = "./1-Fragment_C_Hole_measurements.csv"
-
 
     run_nested(root_dir, data_path)
     plot_data.plot_all(root_dir)

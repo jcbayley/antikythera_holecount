@@ -42,8 +42,9 @@ def log_likelihood(params, data, N):
     invsig_r = 1./(2*(sigma_r*sigma_r))
     invsig_t = 1./(2*(sigma_t*sigma_t))
 
-    npoints = np.sum([len(dt) for dt in data])
-    prefact = -npoints*np.log(2*np.pi*sigma_t*sigma_r)
+    #npoints = np.sum([len(dt) for dt in data])
+    prefact = 0#-npoints*np.log(2*np.pi*sigma_t*sigma_r)
+
     phis = 2*np.pi*np.arange(100)/N
 
     #k = np.arange(N)
@@ -56,7 +57,9 @@ def log_likelihood(params, data, N):
 
         exponent = -invsig_r*(rp**2) - invsig_t*(tp**2)
 
-        exp_likelihood += np.sum(exponent)
+        prefact_i = -len(x)*np.log(2*np.pi*sigma_t*sigma_r)
+
+        exp_likelihood += np.sum(exponent) + prefact_i
 
 
     return prefact + exp_likelihood
@@ -84,9 +87,9 @@ def log_likelihood_wrong(params, data, N):
 
         exponent = -invsig_r*(rp**2) - invsig_t*(tp**2)
 
-        prefact = -len(x)*np.log(2*np.pi*sigma_t*sigma_r)
+        prefact_i = -len(x)*np.log(2*np.pi*sigma_t*sigma_r)
 
-        exp_likelihood += np.sum(prefact - exponent)
+        exp_likelihood += np.sum(prefact_i + exponent)
 
 
     return prefact + exp_likelihood
@@ -94,10 +97,10 @@ def log_likelihood_wrong(params, data, N):
 
 def prior_bounds(nsegments):
     bounds = {
-    "R": (60, 100),
-    "sigma_x": (0,1),
-    "sigma_y": (0,1),
-}
+        "R": (60, 100),
+        "sigma_x": (0,1),
+        "sigma_y": (0,1),
+    }
     for k in range(nsegments):
         bounds[f"phases{k}"] = (0,2*np.pi)
     for k in range(nsegments):
@@ -135,17 +138,16 @@ def run_nested(root_dir, data_path, wrong_likelihood = False):
             f.write(f"{line}\n")
 
     anti_logzs = []
-    anti_samples = []
-    ndims = 3 + 3*nsegments
-    Nrange = np.arange(352, 367)#np.array([353, 354, 355, 359, 360, 361])
 
-    
-    print(ndims)
+    ndims = 3 + 3*nsegments
+    Nrange = np.arange(352, 367) # np.array([353, 354, 355, 359, 360, 361])
+
     for n in Nrange:
         if wrong_likelihood:
             andyll = lambda params: log_likelihood_wrong(params, data, n)
         else:
             andyll = lambda params: log_likelihood(params, data, n)
+
         andypt = lambda params: prior_transform(params, bounds, plabels)
 
         sampler = NestedSampler(andyll, andypt, ndim=ndims, nlive=500)

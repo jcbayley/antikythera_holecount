@@ -20,13 +20,14 @@ def log_likelihood(params, data, N):
     phases, xcents, ycents = np.split(params[3:], 3)
     #x,y = data
 
-    npoints = np.sum([len(dt) for dt in data])
-    prefact = -npoints*np.log(2*np.pi*sigma_phi*sigma_r)
+    #npoints = np.sum([len(dt) for dt in data])
+    prefact = 0#-npoints*np.log(2*np.pi*sigma_phi*sigma_r)
 
     #k = np.arange(N)
     exp_likelihood = 0
     for i, sect in enumerate(data):
         x,y = sect
+
         # assume independent x,y
         xnorm = x - xcents[i]
         ynorm = y - ycents[i]
@@ -38,26 +39,24 @@ def log_likelihood(params, data, N):
         xi = R*np.cos(segphases + phases[i]) 
         yi = R*np.sin(segphases + phases[i])
 
-        phase_data = np.arctan2(y, x)
+        phase_data = np.arctan2(ynorm, xnorm)
         phase_model = np.arctan2(yi, xi)
 
         #xi = R*np.cos(2*np.pi*ks/N + phase) + xcent
         x_likelihood = -(r_data - R)**2/(2*sigma_r**2) - (phase_data - phase_model)**2/(2*sigma_phi**2)
 
 
-        exp_likelihood += np.sum(x_likelihood)
-
-   
+        exp_likelihood += np.sum(x_likelihood) - len(x)*np.log(2*np.pi*sigma_phi*sigma_r)
 
     return prefact + exp_likelihood
 
 
 def prior_bounds(nsegments):
     bounds = {
-    "R": (60, 100),
-    "sigma_r": (0,1),
-    "sigma_phi": (0,1),
-}
+        "R": (60, 100),
+        "sigma_r": (0,1),
+        "sigma_phi": (0,1),
+    }
     for k in range(nsegments):
         bounds[f"phases{k}"] = (0,2*np.pi)
     for k in range(nsegments):
