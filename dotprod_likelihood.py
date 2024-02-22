@@ -98,8 +98,8 @@ def log_likelihood_wrong(params, data, N):
 def prior_bounds(nsegments):
     bounds = {
         "R": (60, 100),
-        "sigma_x": (0,1),
-        "sigma_y": (0,1),
+        "sigma_r": (0,1),
+        "sigma_t": (0,1),
     }
     for k in range(nsegments):
         bounds[f"phases{k}"] = (0,2*np.pi)
@@ -121,17 +121,17 @@ def prior_transform(u, bounds, plabels):
     return outvals
 
 
-def run_nested(root_dir, data_path, wrong_likelihood = False):
+def run_nested(root_dir, data_path, wrong_likelihood = False, segments=None, remove_endpoints=False, remove_singles=False):
 
     if not os.path.isdir(root_dir):
         os.makedirs(root_dir)
 
-    data = load_data.load_antikythera(data_path)
+    data = load_data.load_antikythera(data_path, segments=segments, remove_endpoints=remove_endpoints, remove_singles=remove_singles)
     nsegments = len(data)
 
     bounds = prior_bounds(nsegments)
 
-    plabels = ["R", "sigma_x", "sigma_y"] + [f"phases{i}" for i in range(nsegments)] + [f"xcent{i}" for i in range(nsegments)] + [f"ycent{i}" for i in range(nsegments)]
+    plabels = ["R", "sigma_r", "sigma_t"] + [f"phases{i}" for i in range(nsegments)] + [f"xcent{i}" for i in range(nsegments)] + [f"ycent{i}" for i in range(nsegments)]
 
     with open(os.path.join(root_dir,"parnames.txt"), "w") as f:
         for line in plabels:
@@ -140,7 +140,7 @@ def run_nested(root_dir, data_path, wrong_likelihood = False):
     anti_logzs = []
 
     ndims = 3 + 3*nsegments
-    Nrange = np.arange(352, 367) # np.array([353, 354, 355, 359, 360, 361])
+    Nrange = np.arange(350, 367) # np.array([353, 354, 355, 359, 360, 361])
 
     for n in Nrange:
         if wrong_likelihood:
@@ -150,18 +150,39 @@ def run_nested(root_dir, data_path, wrong_likelihood = False):
 
         andypt = lambda params: prior_transform(params, bounds, plabels)
 
-        sampler = NestedSampler(andyll, andypt, ndim=ndims, nlive=500)
+        sampler = NestedSampler(andyll, andypt, ndim=ndims, nlive=4000)
 
-        sampler.run_nested(checkpoint_file=os.path.join(root_dir, f'dynesty_{n}.save'))
+        sampler.run_nested(checkpoint_file=os.path.join(root_dir, f'dynesty_{n}.save'), dlogz=0.1)
 
         res = sampler.results
 
         anti_logzs.append(res.logz[-1])
 
 if __name__ == "__main__":
-    
-    root_dir = "./dotprod_likelihood_wrong"
+
+    #segments = [1,2,3,5,6,7]
+    segments = [1,2,3,7]
+
+    remove_endpoints = True
+
+    if segments is not None:
+        seg_str = ""
+        for i in segments:
+            seg_str += str(i)
+    else:
+        seg_str = "none"
+
+    root_dir = f"./dotprod_dynesty_4000live_{seg_str}_{remove_endpoints}_remove_singles"
+
     data_path = "./1-Fragment_C_Hole_measurements.csv"
 
-    run_nested(root_dir, data_path, wrong_likelihood=True)
+
+    run_nested(
+        root_dir, 
+        data_path, 
+        wrong_likelihood=False,
+        segments=segments,
+        remove_singles=True,
+        remove_endpoints=remove_endpoints)
+    
     plot_data.plot_all(root_dir)

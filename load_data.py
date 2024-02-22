@@ -4,17 +4,30 @@ import os
 from dynesty import NestedSampler
 from dynesty import plotting as dyplot
 
-def load_antikythera(fname):
+def load_antikythera(fname, segments = None, remove_endpoints=False, remove_singles=True):
     data = pandas.read_csv(fname)
 
     data_col = data[["Section ID", "Mean(X)", "Mean(Y)"]]
 
     data_groupeddf = data_col.groupby(data_col["Section ID"])[["Mean(X)", "Mean(Y)"]].agg(lambda x: x.tolist()).values
 
+    if segments is None:
+        segments = np.arange(len(data_groupeddf))
+
     data_grouped = []
-    for xt, yt in data_groupeddf:
-        xn = np.array(xt)
-        yn = np.array(yt)
+    for i, (xt, yt) in enumerate(data_groupeddf):
+        if i not in segments:
+            continue
+        if remove_endpoints:
+            xn = np.array(xt)[1:-1]
+            yn = np.array(yt)[1:-1]
+        else:
+            xn = np.array(xt)
+            yn = np.array(yt)
+        if remove_singles:
+            print(i, len(xn), len(yn), len(xt), len(yt))
+            if len(xn) <= 1:
+                continue
         data_grouped.append([xn, yn])
 
     return data_grouped
