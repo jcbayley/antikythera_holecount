@@ -11,10 +11,12 @@ def load_antikythera(fname, segments = None, remove_endpoints=False, remove_sing
 
     data_groupeddf = data_col.groupby(data_col["Section ID"])[["Mean(X)", "Mean(Y)"]].agg(lambda x: x.tolist()).values
 
+
     if segments is None:
         segments = np.arange(len(data_groupeddf))
 
     data_grouped = []
+    segments_included = []
     for i, (xt, yt) in enumerate(data_groupeddf):
         if i not in segments:
             continue
@@ -24,13 +26,17 @@ def load_antikythera(fname, segments = None, remove_endpoints=False, remove_sing
         else:
             xn = np.array(xt)
             yn = np.array(yt)
+        if len(xn) < 1:
+            continue
+
         if remove_singles:
             print(i, len(xn), len(yn), len(xt), len(yt))
             if len(xn) <= 1:
                 continue
         data_grouped.append([xn, yn])
+        segments_included.append(i)
 
-    return data_grouped
+    return segments_included, data_grouped
 
 
 def load_evidences(root_dir):

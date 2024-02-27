@@ -6,6 +6,7 @@ from nessai.utils import setup_logger
 import load_data
 import plot_data
 import os
+import csv
 
 class GaussianModel(Model):
     """A simple two-dimensional Gaussian likelihood."""
@@ -112,13 +113,32 @@ class GaussianModel(Model):
 
 
 
-def run_nested(root_dir, data_path, wrong_likelihood = False, segments=None, remove_endpoints=False, remove_singles=True):
+def run_nested(root_dir, data_path, segments=None, remove_endpoints=False, remove_singles=True):
 
+
+    used_segments, data = load_data.load_antikythera(data_path, segments=segments, remove_endpoints=remove_endpoints, remove_singles=remove_singles)
+    nsegments = len(data)
+
+    print(data)
+
+    seg_str = ""
+    for i in used_segments:
+        seg_str += str(i)
+
+    sub_dir = f"./dotprod_nsample_nessai_{seg_str}"
+    if remove_endpoints:
+        sub_dir += "_remove_endpoints"
+    if remove_singles:
+        sub_dir += "_remove_singles"
+
+    root_dir = os.path.join(root_dir, sub_dir)
+    
     if not os.path.isdir(root_dir):
         os.makedirs(root_dir)
 
-    data = load_data.load_antikythera(data_path, segments=segments, remove_endpoints=remove_endpoints, remove_singles=remove_singles)
-    nsegments = len(data)
+    with open(os.path.join(root_dir, "data_used.csv"), "w") as f:
+        wr = csv.writer(f)
+        wr.writerows(data)
 
     model = GaussianModel(data)
 
@@ -143,19 +163,12 @@ if __name__ == "__main__":
     segments = None
     #segments = [1,2,3,7]
 
-    remove_endpoints = True
+    remove_endpoints = False
     remove_singles = True
 
-    if segments is not None:
-        seg_str = ""
-        for i in segments:
-            seg_str += str(i)
-    else:
-        seg_str = "none"
 
-    root_dir = f"./dotprod_nsample_nessai_{seg_str}_{remove_endpoints}_remove_singles"
+    root_dir = f"./dotprod_nsample_nessai"
+
     data_path = "./1-Fragment_C_Hole_measurements.csv"
 
-
-    run_nested(root_dir, data_path, wrong_likelihood=False, segments=segments, remove_endpoints=remove_endpoints, remove_singles=remove_singles)
-    plot_data.plot_all(root_dir)
+    run_nested(root_dir, data_path, segments=segments, remove_endpoints=remove_endpoints, remove_singles=remove_singles)

@@ -139,37 +139,57 @@ def run_nested(
         ins_nessai=False,
         nlive=4000):
 
-    if not os.path.isdir(root_dir):
-        os.makedirs(root_dir)
 
-    data = load_data.load_antikythera(
+    used_segments, data = load_data.load_antikythera(
         data_path, 
         segments=segments, 
         remove_endpoints=remove_endpoints, 
         remove_singles=remove_singles)
     
+    seg_str = ""
+    for i in used_segments:
+        seg_str += str(i)
+
+    sub_dir = f"./dotprod_{seg_str}"
+    if remove_endpoints:
+        sub_dir += "_remove_endpoints"
+    if remove_singles:
+        sub_dir += "_remove_singles"
+
+    root_dir = os.path.join(root_dir, sub_dir)
+    
+    if not os.path.isdir(root_dir):
+        os.makedirs(root_dir)
+    
     nsegments = len(data)
     for i, dt in enumerate(data):
         print(f"segment{i} length", len(dt[0]), len(dt[1]))
 
-    #model = GaussianModel(data, 354)
+    model = GaussianModel(data, 354)
 
 
-    #with open(os.path.join(root_dir,"parnames.txt"), "w") as f:
-    #    for line in model.names:
-    #        f.write(f"{line}\n")
+    with open(os.path.join(root_dir,"parnames.txt"), "w") as f:
+        for line in model.names:
+            f.write(f"{line}\n")
 
     anti_logzs = []
 
     ndims = 3 + 3*nsegments
-    Nrange = [354]#np.arange(350, 367) # np.array([353, 354, 355, 359, 360, 361])
+    Nrange = np.arange(352, 356) # np.array([353, 354, 355, 359, 360, 361])
 
     for n in Nrange:
         output = os.path.join(root_dir, f"nessai_{n}")
         model = GaussianModel(data, n)
         logger = setup_logger(output=output)
         
-        sampler = FlowSampler(model, output=output, nlive=nlive, importance_nested_sampler=ins_nessai)
+        sampler = FlowSampler(
+            model, 
+            output=output, 
+            nlive=nlive, 
+            importance_nested_sampler=ins_nessai,
+            reset_flow=16,
+            drawsize=10000,
+            volume_fraction=0.98)
         sampler.run()
         del model
 
@@ -195,7 +215,7 @@ if __name__ == "__main__":
     else:
         alg = "nessai"
 
-    root_dir = f"./dotprod_{alg}_{nlive}live_{seg_str}_{remove_endpoints}_remove_singles"
+    root_dir = f"./dotprod_{alg}"
     data_path = "./1-Fragment_C_Hole_measurements.csv"
 
 
@@ -209,4 +229,3 @@ if __name__ == "__main__":
         ins_nessai = ins_nessai,
         nlive=nlive)
     
-    plot_data.plot_all(root_dir)
