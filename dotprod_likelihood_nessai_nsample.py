@@ -7,6 +7,7 @@ import load_data
 import plot_data
 import os
 import csv
+from dotprod_likelihood_dynesty_nsample import log_likelihood
 
 class GaussianModel(Model):
     """A simple two-dimensional Gaussian likelihood."""
@@ -85,10 +86,14 @@ class GaussianModel(Model):
 
         x = live_points_to_dict(x, self.names)
 
+        params = np.array([x[parname] for parname in self.names])
+        exp_likelihood = log_likelihood(params, self.data)
+
+
         #R, sigma_r, sigma_t = x[0][:3]
         #phases, xcents, ycents = np.split(x[0][3:], 3)
         #x,y = data
-
+        """
         invsig_r = 1./(2*(x["sigma_r"]*x["sigma_r"]))
         invsig_t = 1./(2*(x["sigma_t"]*x["sigma_t"]))
 
@@ -104,12 +109,14 @@ class GaussianModel(Model):
 
             exponent = -invsig_r*(rp**2) - invsig_t*(tp**2)
 
+            # X HERE SHOULD BE XPOS len(x) -> len(xpos)
             prefact_i = -len(x)*np.log(2*np.pi*x["sigma_t"]*x["sigma_r"])
 
             exp_likelihood += np.sum(exponent) + prefact_i
 
-
+        """
         return exp_likelihood
+
 
 
 
@@ -161,13 +168,13 @@ if __name__ == "__main__":
 
     #segments = [1,2,3,5,6,7]
     segments = None
-    #segments = [1,2,3,7]
+    segments = [1,2,3,7]
 
-    remove_endpoints = False
+    remove_endpoints = True
     remove_singles = True
 
 
-    root_dir = f"./dotprod_nsample_nessai"
+    root_dir = f"./dotprod_nsample_nessai_2"
 
     data_path = "./1-Fragment_C_Hole_measurements.csv"
 

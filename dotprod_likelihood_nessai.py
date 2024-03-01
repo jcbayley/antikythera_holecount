@@ -6,6 +6,7 @@ from nessai.utils import setup_logger
 import load_data
 import plot_data
 import os
+from dotprod_likelihood_dynesty_nsample import log_likelihood
 
 class GaussianModel(Model):
     """A simple two-dimensional Gaussian likelihood."""
@@ -87,6 +88,11 @@ class GaussianModel(Model):
         #phases, xcents, ycents = np.split(x[0][3:], 3)
         #x,y = data
 
+        params = np.array([x[parname] for parname in self.names])
+        params = np.insert(params, 0, self.N)
+        exp_likelihood = log_likelihood(params, self.data)
+        """
+
         invsig_r = 1./(2*(x["sigma_r"]*x["sigma_r"]))
         invsig_t = 1./(2*(x["sigma_t"]*x["sigma_t"]))
 
@@ -106,8 +112,9 @@ class GaussianModel(Model):
 
             exp_likelihood += np.sum(exponent) + prefact_i
 
-
+        """
         return exp_likelihood
+        
 
     def to_unit_hypercube(self, x):
         """Map to the unit hyper-cube"""
@@ -175,7 +182,7 @@ def run_nested(
     anti_logzs = []
 
     ndims = 3 + 3*nsegments
-    Nrange = np.arange(352, 356) # np.array([353, 354, 355, 359, 360, 361])
+    Nrange =  np.array([350, 351, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366])
 
     for n in Nrange:
         output = os.path.join(root_dir, f"nessai_{n}")
@@ -215,7 +222,7 @@ if __name__ == "__main__":
     else:
         alg = "nessai"
 
-    root_dir = f"./dotprod_{alg}"
+    root_dir = f"./dotprod_{alg}_2"
     data_path = "./1-Fragment_C_Hole_measurements.csv"
 
 
