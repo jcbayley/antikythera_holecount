@@ -4,6 +4,9 @@ import os
 import load_data
 from dynesty import NestedSampler
 from dynesty import plotting as dyplot
+import dill
+import dynesty.utils
+dynesty.utils.pickle_module = dill
 
 def plot_circle_points(root_dir, data):
 
